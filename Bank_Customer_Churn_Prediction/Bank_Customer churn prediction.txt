@@ -1,0 +1,130 @@
+BankChurners <- read.csv(file.choose());
+BankChurners;
+
+#import data
+BankChurners <- read.csv("C:\\Users\\sajee\\Desktop\\Visualization\\Data visualization\\Project\\NEW\\Final\\BankChurners.csv");
+BankChurners;
+
+str(BankChurners);
+summary(BankChurners);
+
+#check missing value
+missing_value<- sum(is.na(BankChurners));
+missing_value;
+
+#check for duplicates
+duplicates<-any(duplicated(BankChurners));
+duplicates;
+
+#Check for Outliers
+
+par(mar=c(3,3,2,1));
+boxplot(BankChurners$Customer_Age,BankChurners$Months_on_book,BankChurners$Total_Relationship_Count,
+        BankChurners$Months_Inactive_12_mon);
+
+boxplot(BankChurners$Contacts_Count_12_mon,BankChurners$Credit_Limit,BankChurners$Total_Revolving_Bal);
+
+boxplot(BankChurners$Avg_Open_To_Buy,BankChurners$Total_Amt_Chng_Q4_Q1,
+        BankChurners$Total_Trans_Amt);
+
+boxplot(BankChurners$Total_Trans_Ct,BankChurners$Total_Ct_Chng_Q4_Q1,BankChurners$Avg_Utilization_Ratio);
+
+#Outlier Treatment
+#Age
+ageQ1 <- quantile(BankChurners$Customer_Age,.25);ageQ1;
+ageQ3 <- quantile(BankChurners$Customer_Age,.75);ageQ3;
+ageIQR <- ageQ3-ageQ1;ageIQR;
+
+eliminated<- subset(BankChurners, BankChurners$Customer_Age > (ageQ1-1.5*ageIQR) & BankChurners$Customer_Age < (ageQ3+1.5*ageIQR));
+eliminated;
+
+par(mar=c(3,3,2,1));
+boxplot(eliminated$Customer_Age);
+
+#Month on Book
+MOBookQ1 <- quantile(eliminated$Months_on_book,.25);MOBookQ1;
+MOBookQ3 <- quantile(eliminated$Months_on_book,.75);MOBookQ3;
+MOBookIQR <- MOBookQ3-MOBookQ1;MOBookIQR;
+
+eliminated1<- subset(eliminated, eliminated$Months_on_book > (MOBookQ1-1.5*MOBookIQR) & eliminated$Months_on_book < (MOBookQ3+1.5*MOBookIQR));
+eliminated1;
+
+par(mar=c(3,3,2,1));
+boxplot(eliminated1$Months_on_book);
+
+#Credit_Limit
+CLimitQ1 <- quantile(eliminated1$Credit_Limit,.25);CLimitQ1;
+CLimitQ3 <- quantile(eliminated1$Credit_Limit,.75);CLimitQ3;
+CLimitIQR <- CLimitQ3-CLimitQ1;CLimitIQR;
+
+eliminated2<- subset(eliminated1, eliminated1$Credit_Limit > (CLimitQ1-1.5*CLimitIQR) & eliminated1$Credit_Limit < (CLimitQ3+1.5*CLimitIQR));
+eliminated2;
+
+par(mar=c(3,3,2,1));
+boxplot(eliminated2$Credit_Limit);
+
+summary(BankChurners);
+
+#Categorization 
+Age_group<-cut(BankChurners$Customer_Age,c(20,30,40,50,60,70,80,120),labels = c("20-30","31-40","41-50","51-60","61-70","71-80",">80"));
+Age_group;
+
+BankChurners$Age_group<-Age_group;
+BankChurners;
+
+#transform variable type
+BankChurners [c(1,2,4,5,6,7,8,9,24)] = lapply(BankChurners [c(1,2,4,5,6,7,8,9,24)],FUN=factor);
+
+BankChurners [c(3,10:23)] = lapply(BankChurners[c(3,10:23)],as.numeric);
+
+summary(BankChurners);
+
+str(BankChurners);
+
+write.csv(BankChurners,"C:\\Users\\sajee\\Desktop\\Visualization\\Data visualization\\Project\\NEW\\BankChurnersnew.csv");
+
+#Regression Model
+
+#Train & Test data sets
+sampleI <- sort(sample(nrow(BankChurners), as.integer(nrow(BankChurners)*0.7)));
+sampleI ;
+
+train <- BankChurners[sampleI,]; train;
+test <- BankChurners[-sampleI,]; test;
+
+#fit logistic regression model with all the variables
+
+modelone <- glm(Attrition_Flag~Customer_Age+Gender+Dependent_count+Education_Level+Marital_Status+Income_Category+Card_Category+Months_on_book+Total_Relationship_Count+Months_Inactive_12_mon+Contacts_Count_12_mon+Credit_Limit+Total_Revolving_Bal+Avg_Open_To_Buy+Total_Amt_Chng_Q4_Q1+Total_Trans_Amt+Total_Trans_Ct+Total_Ct_Chng_Q4_Q1+Avg_Utilization_Ratio, family="binomial", data=train)
+summary(modelone);
+
+install.packages("logistf")
+library(logistf)
+
+install.packages("pscl")
+
+pscl::pR2(modelone)["McFadden"]
+
+#fit logistic regression model with selected variables
+modeltwo <- glm(Attrition_Flag~Gender+Total_Relationship_Count+Months_Inactive_12_mon+Contacts_Count_12_mon+Total_Revolving_Bal+Total_Amt_Chng_Q4_Q1+Total_Trans_Amt+Total_Trans_Ct, family="binomial", data=train)
+summary(modeltwo);
+
+pscl::pR2(modeltwo)["McFadden"]
+
+#prediction with model
+
+pred<-predict(modeltwo, test, type="response"); pred;
+
+test1<-test;
+
+test1$PR<-pred;
+test1;
+
+
+write.csv(test1,"C:\\Users\\sajee\\Desktop\\Visualization\\Data visualization\\Project\\NEW\\Final\\test1.csv");
+
+
+par(mar=c(3,3,2,1));
+boxplot(BankChurners$Credit_Limit ~BankChurners$Attrition_Flag)
+
+
+BankChurners;
